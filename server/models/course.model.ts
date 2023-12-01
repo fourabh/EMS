@@ -56,7 +56,7 @@ const reviewSchema = new Schema<IReview>({
     default: 0,
   },
   comment: String,
-  //   commentReplies:[Object]     -> if it give u error then try after uncommenting this
+  commentReplies: [Object], //-> if it give u error then try after uncommenting this
 });
 
 const linkSchema = new Schema<ILink>({
