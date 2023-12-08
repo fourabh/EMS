@@ -1,5 +1,5 @@
 import { apiSlice } from "../api/apiSlice";
-import { userLoggedIn, userRegistration } from "./authSlice";
+import { userLoggedIn, userLoggedOut, userRegistration } from "./authSlice";
 
 type RegistrationResponse = {
   message: string;
@@ -57,7 +57,7 @@ export const authApi = apiSlice.injectEndpoints({
           dispatch(
             userLoggedIn({
               accessToken: result.data.activationToken,
-              user:result.data.user
+              user: result.data.user,
             })
           );
         } catch (error) {
@@ -66,12 +66,13 @@ export const authApi = apiSlice.injectEndpoints({
       },
     }),
     socialAuth: builder.mutation({
-      query: ({ email, name,avatar }) => ({
+      query: ({ email, name, avatar }) => ({
         url: "social-auth",
         method: "POST",
         body: {
           email,
-          name,avatar,
+          name,
+          avatar,
         },
         credentials: "include" as const,
       }),
@@ -81,7 +82,7 @@ export const authApi = apiSlice.injectEndpoints({
           dispatch(
             userLoggedIn({
               accessToken: result.data.activationToken,
-              user:result.data.user
+              user: result.data.user,
             })
           );
         } catch (error) {
@@ -89,7 +90,27 @@ export const authApi = apiSlice.injectEndpoints({
         }
       },
     }),
+    logOut: builder.query({
+      query: () => ({
+        url: "logout",
+        method: "GET",
+        credentials: "include" as const,
+      }),
+      async onQueryStarted(arg, { queryFulfilled, dispatch }) {
+        try {
+          dispatch(userLoggedOut());
+        } catch (error: any) {
+          console.log(error);
+        }
+      },
+    }),
   }),
 });
 
-export const { useRegisterMutation, useActivationMutation,useLoginMutation, useSocialAuthMutation } = authApi;
+export const {
+  useRegisterMutation,
+  useActivationMutation,
+  useLoginMutation,
+  useSocialAuthMutation,
+  useLogOutQuery
+} = authApi;
