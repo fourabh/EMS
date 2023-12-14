@@ -107,13 +107,18 @@ const Header: FC<Props> = ({ activeItem, setOpen, open, route, setRoute }) => {
                 />
               </div>
               {user ? (
-                // <Link href={"/profile"}>
-                <Image
-                  src={user.avatar ? user.avatar : avatar}
-                  alt=""
-                  className="w-[30px] h-[30px] cursor-pointer rounded-full"
-                  onClick={() => setOpen(true)}
-                />
+                <Link href={"/profile"}>
+                  <Image
+                    src={user.avatar ? user.avatar.url : avatar}
+                    alt=""
+                    width={30}
+                    height={30}
+                    className="w-[30px] h-[30px] cursor-pointer rounded-full"
+                    style={{
+                      border: activeItem === 5 ? "2px solid #37a39a" : "none",
+                    }}
+                  />
+                </Link>
               ) : (
                 <HiOutlineUserCircle
                   size={25}
