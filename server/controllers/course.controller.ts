@@ -9,6 +9,7 @@ import mongoose from "mongoose";
 import ejs from "ejs";
 import path from "path";
 import sendMail from "../utils/sendMail";
+import axios from "axios";
 
 // Upload course
 export const uploadCourse = CatchAsyncError(
@@ -320,87 +321,109 @@ export const addReview = CatchAsyncError(
 
       const { review, rating } = req.body as IAddReviewData;
 
-      const reviewData:any = {
+      const reviewData: any = {
         user: req.user,
         comment: review,
         rating,
       };
 
-      course?.reviews.push(reviewData)
+      course?.reviews.push(reviewData);
 
       let avg = 0;
 
-      course?.reviews.forEach((rev:any)=>{
-        avg =+ rev.rating
-      })
+      course?.reviews.forEach((rev: any) => {
+        avg = +rev.rating;
+      });
 
-      if(course){
-        course.ratings = avg / course.reviews.length
+      if (course) {
+        course.ratings = avg / course.reviews.length;
       }
 
-      await course?.save()
+      await course?.save();
 
       const notification = {
-        title:"New Review Recieved",
-        message:`${req.user?.name} has given a review in ${course?.name}`
-      }
+        title: "New Review Recieved",
+        message: `${req.user?.name} has given a review in ${course?.name}`,
+      };
 
       //Create notification
 
-
       res.status(200).json({
-        success:true,
-        course
-      })
-
+        success: true,
+        course,
+      });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 500));
     }
   }
 );
 
-
 // add reply in review
-interface IAddReplyToReviewData{
-  comment:string;
-  courseId:string;
-  reviewId:string
+interface IAddReplyToReviewData {
+  comment: string;
+  courseId: string;
+  reviewId: string;
 }
 
-export const addReplyToReview = CatchAsyncError(async (req:Request,res:Response,next:NextFunction)=>{
-  try {
-    
-    const {comment,courseId,reviewId} = req.body as IAddReplyToReviewData
+export const addReplyToReview = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { comment, courseId, reviewId } = req.body as IAddReplyToReviewData;
 
-    const course = await CourseModel.findById(courseId)
+      const course = await CourseModel.findById(courseId);
 
-    if(!course){
-      return next(new ErrorHandler("Course not found",404))
+      if (!course) {
+        return next(new ErrorHandler("Course not found", 404));
+      }
+      const review = course.reviews.find(
+        (rev: any) => rev._id.toString() === reviewId
+      );
+
+      if (!review) {
+        return next(new ErrorHandler("Review not found", 404));
+      }
+      const replyData: any = {
+        user: req.user,
+        comment,
+      };
+
+      if (!review.commentReplies) {
+        review.commentReplies = [];
+      }
+
+      review.commentReplies?.push(replyData);
+
+      await course.save();
+
+      res.status(200).json({
+        success: true,
+        course,
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500));
     }
-    const review = course.reviews.find((rev:any)=>rev._id.toString() === reviewId)
-
-    if(!review){
-      return next(new ErrorHandler("Review not found",404))
-    }
-    const replyData:any = { 
-      user:req.user,
-      comment
-    }
-
-    if(!review.commentReplies){
-      review.commentReplies = []
-    }
-
-    review.commentReplies?.push(replyData)
-
-    await course.save()
-
-    res.status(200).json({
-      success:true,
-      course
-    })
-
-  } catch (error:any) {
-    return next(new ErrorHandler(error.message,500))
   }
-})
+);
+
+// generate video url
+export const generateVideoUrl = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { videoId } = req.body;
+      const response = await axios.post(
+        `https://dev.vdocipher.com/api/videos/${videoId}/otp`,
+        { ttl: 300 },
+        {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Apisecret ${process.env.VDOCIPHER_API_SECRET}`,
+          },
+        }
+      );
+      res.json(response.data)
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
